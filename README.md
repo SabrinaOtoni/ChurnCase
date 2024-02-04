@@ -2,7 +2,7 @@
 
 ## Autora
 
-> Sabrina Otoni da Silva
+- Sabrina Otoni da Silva
 
 ## Revisado por
 
