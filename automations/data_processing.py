@@ -108,7 +108,7 @@ class LogTransformer(BaseEstimator, TransformerMixin):
         """
         new_X = X.copy()
         for col in self.columns:
-            if (new_X[col] <= 0).any():
+            if (new_X[col].values <= 0).any():
                 raise ValueError(f"A coluna {col} contém valores não positivos que não podem ser transformados.")
             
             new_X[col] = np.log1p(new_X[col])
@@ -173,6 +173,7 @@ class BoxCoxTransformer(BaseEstimator, TransformerMixin):
             new_x[col] = transformer.transform(new_x[[col]])
         return new_x
 
+    
 class DropColumns(BaseEstimator, TransformerMixin):
     """
     Um transformador que remove colunas especificadas de um DataFrame.
@@ -204,10 +205,59 @@ class DropColumns(BaseEstimator, TransformerMixin):
         Remove as colunas especificadas do DataFrame.
         Retorna o DataFrame com as colunas removidas.
         """
-        X = X.copy()
-        X.drop(self.drop_columns, axis=1, inplace=True, errors='ignore')
-        return X
 
+        if isinstance(X, pd.DataFrame):
+            X = X.copy()
+            X.drop(self.drop_columns, axis=1, inplace=True, errors='ignore')
+
+        elif isinstance(X, np.ndarray):
+            col_indices = [i for i in range(X.shape[1]) if i not in self.drop_columns]
+            X = X[:, col_indices]
+        else:
+            raise TypeError("O input precisa ser um DataFrame do pandas ou um numpy.ndarray")
+        return X
+    
+        # X = X.copy()
+        # X.drop(self.drop_columns, axis=1, inplace=True, errors='ignore')
+        # return X
+
+# class ServiceTransformer(BaseEstimator, TransformerMixin):
+#     def __init__(self, columns):
+#         """
+#         Inicializa a classe com as colunas nas quais foram parametrizadas para realizar a validação e transformação.
+#         """
+#         self.columns = columns
+
+#     def fit(self, X, y=None):
+#         """
+#         Método de ajuste. Não realiza nenhuma operação.
+#         Retorna a própria instância da classe.
+#         """
+#         return self
+
+#     def transform(self, X):
+#         """
+#         Realiza a validação e transformação nas colunas especificadas.
+#         Se encontrar "No [alguma coisa] service" e a validação for bem-sucedida, transforma em "No".
+#         """
+#         for column in self.columns:
+#             if column in X.columns:
+#                 # Aplica a transformação condicional
+#                 X[column] = X.apply(lambda row: self._validate_and_transform(row, column), axis=1)
+#         return X
+
+#     def _validate_and_transform(self, row, column):
+#         value = row[column]
+
+#         if 'No phone service' in value:
+#             if row['Phone Service'] == 'No':
+#                 return 'No'
+            
+#         elif 'No internet service' in value:
+#             if row['Internet Service'] == 'No':
+#                 return 'No'
+#         return value
+    
 class ServiceTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, columns):
         """
@@ -227,10 +277,18 @@ class ServiceTransformer(BaseEstimator, TransformerMixin):
         Realiza a validação e transformação nas colunas especificadas.
         Se encontrar "No [alguma coisa] service" e a validação for bem-sucedida, transforma em "No".
         """
-        for column in self.columns:
-            if column in X.columns:
-                # Aplica a transformação condicional
-                X[column] = X.apply(lambda row: self._validate_and_transform(row, column), axis=1)
+        if isinstance(X, pd.DataFrame):
+            for column in self.columns:
+                if column in X.columns:
+                    # Aplica a transformação condicional
+                    X[column] = X.apply(lambda row: self._validate_and_transform(row, column), axis=1)
+        elif isinstance(X, np.ndarray):
+            # Lida com a transformação de um numpy.ndarray
+            # Isso pode ser mais desafiador, pois você precisa ter acesso ao nome das colunas e aos seus índices
+            raise NotImplementedError("Transformação de numpy.ndarray não suportada nesta versão.")
+        else:
+            raise TypeError("O input precisa ser um DataFrame do pandas ou um numpy.ndarray")
+
         return X
 
     def _validate_and_transform(self, row, column):
