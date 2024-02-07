@@ -1,57 +1,42 @@
 
 '''
 Script python para tratamento do dataset "telco_customer_churn" disponibilizado pela IBM para demonstração da ferramenta IBM Cognos Analytics.
-
+--------------------------------------
 Sabrina Otoni da Silva - 2024/01
 '''
-
-# Importação das bibliotecas necessárias.
 import os
 from pathlib import Path
 
-import pandas as pd
 import numpy as np
-
-from scipy.signal import find_peaks
+import pandas as pd
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder, PowerTransformer
 from sklearn.metrics.pairwise import rbf_kernel
 from sklearn.cluster import KMeans
 
+from scipy.signal import find_peaks
+
 import pickle
 
 class DataTreat(BaseEstimator, TransformerMixin):
     """
-    Um transformador que aplica tratamentos específicos a um DataFrame.
+    Aplica tratamentos ao DataFrame.
 
     Métodos:
     fit: Não faz nenhuma operação de ajuste, retorna o próprio objeto.
-    transform: Aplica transformações especificadas em um DataFrame.
-
-    Levanta:
-    ValueError: Se a validação específica falhar.
+    transform: Aplica transformações especificadas a um DataFrame, retorna o DataFrame tratado.
     """
-
     def fit(self, X, y=None):
-        """
-        Método de ajuste. Não realiza nenhuma operação.
-        Retorna a própria instância da classe.
-        """
         return self
 
     def transform(self, df):
-        """
-        Aplica transformações específicas ao DataFrame.
-        Retorna o DataFrame tratado.
-        """
         l1 = [len(str(i).split()) for i in df['Total Charges']]
         l2 = [i for i in range(len(l1)) if l1[i] != 1]
 
         if not (df.loc[df['Tenure Months'] == 0].index == l2).all():
             print('False')
             raise ValueError("A validação falhou, o processamento não pode continuar.") 
-        
         else:
             print('True')
 
@@ -63,24 +48,24 @@ class DataTreat(BaseEstimator, TransformerMixin):
     
 class LogTransformer(BaseEstimator, TransformerMixin):
     """
-    Um transformador que aplica a transformação logarítmica a colunas específicas de um DataFrame.
-    Essa classe pode ser inicializada com um caminho para um modelo treinado salvo como um arquivo pickle,
-    ou pode ser treinada com um novo conjunto de dados.
+    Aplica a transformação logarítmica em colunas de um DataFrame. 
+    Essa classe pode ser inicializada com um caminho para um modelo treinado salvo como um arquivo pickle ou pode ser treinada com um novo conjunto de dados.
 
     Parâmetros:
     columns: list of str, opcional
         Nomes das colunas no DataFrame a serem transformadas.
     model_path: str, opcional
         Caminho para um arquivo pickle contendo um modelo de transformação logarítmica pré-treinado.
+
+    Métodos:
+    fit: Método de ajuste que define as colunas para transformação.
+    transform: Aplica a transformação logarítmica nas colunas especificadas.
     """
     def __init__(self, columns=None, model_path=None):
         self.columns = columns
         self.model_path = model_path
 
     def fit(self, X, y=None):
-        """
-        Método de ajuste que define as colunas para transformação.
-        """
         if self.model_path is not None:
             with open(self.model_path, 'rb') as file:
                 self.columns = pickle.load(file)
@@ -89,12 +74,10 @@ class LogTransformer(BaseEstimator, TransformerMixin):
             raise ValueError("Colunas não foram especificadas. Você deve especificar as colunas.")
         
         if self.model_path is None:
-            # Verificar se as colunas especificadas estão presentes no DataFrame
             missing_cols = [col for col in self.columns if col not in X.columns]
             
             if missing_cols:
                 raise ValueError(f"As colunas {missing_cols} não estão presentes no DataFrame.")
-            # Salvar as colunas em um arquivo pickle
             
             preprocesspath = Path('../preprocessing')
             
@@ -103,37 +86,38 @@ class LogTransformer(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """
-        Aplica a transformação logarítmica nas colunas especificadas.
-        """
         new_X = X.copy()
+
         for col in self.columns:
             if (new_X[col].values <= 0).any():
                 raise ValueError(f"A coluna {col} contém valores não positivos que não podem ser transformados.")
             
             new_X[col] = np.log1p(new_X[col])
+
+        if new_X.isnull().any().any():
+            print(f"NaNs introduzidos após a transformação {self.__class__.__name__}")
         return new_X
     
 class BoxCoxTransformer(BaseEstimator, TransformerMixin):
     """
-    Transforma colunas específicas de um DataFrame aplicando a transformação Box-Cox.
+    Transforma colunas de um DataFrame aplicando a transformação Box-Cox.
     
     Parâmetros:
     columns: list of str, opcional
         Nomes das colunas no DataFrame a serem transformadas.
     model_path: str, opcional
         Caminho para um arquivo pickle contendo um modelo de transformação Box-Cox pré-treinado.
-    """
 
+    Métodos:
+    fit: Ajusta o transformador para cada coluna especificada usando a transformação Box-Cox.
+    transform: Aplica a transformação Box-Cox nas colunas especificadas.
+    """
     def __init__(self, columns=None, model_path=None):
         self.columns = columns
         self.model_path = model_path
         self.transformers = {}
 
     def fit(self, X, y=None):
-        """
-        Ajusta o transformador para cada coluna especificada usando a transformação Box-Cox.
-        """
         if self.model_path is not None:
             with open(self.model_path, 'rb') as file:
                 saved_data = pickle.load(file)
@@ -144,7 +128,6 @@ class BoxCoxTransformer(BaseEstimator, TransformerMixin):
             raise ValueError("Colunas não foram especificadas. Você deve especificar as colunas.")
 
         for col in self.columns:
-            # Verifica se a coluna existe em X e se todos os valores são positivos
             if col not in X.columns:
                 raise ValueError(f"A coluna '{col}' não está presente no DataFrame.")
             
@@ -154,7 +137,6 @@ class BoxCoxTransformer(BaseEstimator, TransformerMixin):
             transformer = PowerTransformer(method='box-cox', standardize=False)
             self.transformers[col] = transformer.fit(X[[col]])
 
-        # Salvar as colunas e os transformadores em um arquivo pickle
         if self.model_path is None:
             preprocesspath = Path('../preprocessing')
             self.model_path = f'{preprocesspath}/boxcox_transformer_model.pkl'
@@ -164,19 +146,18 @@ class BoxCoxTransformer(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """
-        Aplica a transformação Box-Cox nas colunas especificadas.
-        """
         new_x = X.copy()
 
         for col, transformer in self.transformers.items():
             new_x[col] = transformer.transform(new_x[[col]])
+
+        if new_x.isnull().any().any():
+            print(f"NaNs introduzidos após a transformação {self.__class__.__name__}")
         return new_x
 
-    
 class DropColumns(BaseEstimator, TransformerMixin):
     """
-    Um transformador que remove colunas especificadas de um DataFrame.
+    Remove colunas especificadas de um DataFrame.
 
     Parâmetros:
     drop_columns: list, opcional
@@ -184,153 +165,85 @@ class DropColumns(BaseEstimator, TransformerMixin):
 
     Métodos:
     fit: Não faz nenhuma operação de ajuste, retorna o próprio objeto.
-    transform: Remove as colunas especificadas do DataFrame.
+    transform: Remove as colunas especificadas do DataFrame e retorna o DataFrame com as colunas removidas.
     """
-
     def __init__(self, drop_columns=None):
-        """
-        Inicializa a classe com as colunas a serem removidas.
-        """
         self.drop_columns = drop_columns if drop_columns is not None else []
 
     def fit(self, X, y=None):
-        """
-        Método de ajuste. Não realiza nenhuma operação.
-        Retorna a própria instância da classe.
-        """
         return self
 
     def transform(self, X):
-        """
-        Remove as colunas especificadas do DataFrame.
-        Retorna o DataFrame com as colunas removidas.
-        """
-
-        if isinstance(X, pd.DataFrame):
+        if isinstance(X, np.ndarray):
+            X = pd.DataFrame(X)
+            X.drop(self.drop_columns, axis=1, inplace=True, errors='ignore')
+        elif isinstance(X, pd.DataFrame):
             X = X.copy()
             X.drop(self.drop_columns, axis=1, inplace=True, errors='ignore')
-
-        elif isinstance(X, np.ndarray):
-            col_indices = [i for i in range(X.shape[1]) if i not in self.drop_columns]
-            X = X[:, col_indices]
         else:
             raise TypeError("O input precisa ser um DataFrame do pandas ou um numpy.ndarray")
+        
+        if X.isnull().any().any():
+            print(f"NaNs introduzidos após a transformação {self.__class__.__name__}")
         return X
     
-        # X = X.copy()
-        # X.drop(self.drop_columns, axis=1, inplace=True, errors='ignore')
-        # return X
-
-# class ServiceTransformer(BaseEstimator, TransformerMixin):
-#     def __init__(self, columns):
-#         """
-#         Inicializa a classe com as colunas nas quais foram parametrizadas para realizar a validação e transformação.
-#         """
-#         self.columns = columns
-
-#     def fit(self, X, y=None):
-#         """
-#         Método de ajuste. Não realiza nenhuma operação.
-#         Retorna a própria instância da classe.
-#         """
-#         return self
-
-#     def transform(self, X):
-#         """
-#         Realiza a validação e transformação nas colunas especificadas.
-#         Se encontrar "No [alguma coisa] service" e a validação for bem-sucedida, transforma em "No".
-#         """
-#         for column in self.columns:
-#             if column in X.columns:
-#                 # Aplica a transformação condicional
-#                 X[column] = X.apply(lambda row: self._validate_and_transform(row, column), axis=1)
-#         return X
-
-#     def _validate_and_transform(self, row, column):
-#         value = row[column]
-
-#         if 'No phone service' in value:
-#             if row['Phone Service'] == 'No':
-#                 return 'No'
-            
-#         elif 'No internet service' in value:
-#             if row['Internet Service'] == 'No':
-#                 return 'No'
-#         return value
-    
 class ServiceTransformer(BaseEstimator, TransformerMixin):
+    """
+    Realiza a validação e transformação nas colunas especificadas. 
+    Se encontrar "No [alguma coisa] service" e a validação for bem-sucedida, transforma em "No".
+
+    Parâmetros:
+    columns: list
+        Uma lista de nomes de colunas a serem validadas e transformadas.
+
+    Métodos:
+    fit: Não faz nenhuma operação de ajuste, retorna o próprio objeto.
+    transform: Converte X para DataFrame se necessário e realiza a validação e transformação nas colunas especificadas.
+    """
     def __init__(self, columns):
-        """
-        Inicializa a classe com as colunas nas quais foram parametrizadas para realizar a validação e transformação.
-        """
         self.columns = columns
 
     def fit(self, X, y=None):
-        """
-        Método de ajuste. Não realiza nenhuma operação.
-        Retorna a própria instância da classe.
-        """
         return self
 
     def transform(self, X):
-        """
-        Realiza a validação e transformação nas colunas especificadas.
-        Se encontrar "No [alguma coisa] service" e a validação for bem-sucedida, transforma em "No".
-        """
-        if isinstance(X, pd.DataFrame):
-            for column in self.columns:
-                if column in X.columns:
-                    # Aplica a transformação condicional
-                    X[column] = X.apply(lambda row: self._validate_and_transform(row, column), axis=1)
-        elif isinstance(X, np.ndarray):
-            # Lida com a transformação de um numpy.ndarray
-            # Isso pode ser mais desafiador, pois você precisa ter acesso ao nome das colunas e aos seus índices
-            raise NotImplementedError("Transformação de numpy.ndarray não suportada nesta versão.")
-        else:
-            raise TypeError("O input precisa ser um DataFrame do pandas ou um numpy.ndarray")
+        if not isinstance(X, pd.DataFrame):
+            raise TypeError("O input precisa ser um DataFrame do pandas")
 
+        for column in self.columns:
+            if column in X.columns:
+                X[column] = X.apply(lambda row: self._validate_transform(row, column), axis=1)
+
+        if X.isnull().any().any():
+            print(f"NaNs introduzidos após a transformação {self.__class__.__name__}")
         return X
 
-    def _validate_and_transform(self, row, column):
+    def _validate_transform(self, row, column):
         value = row[column]
 
-        if 'No phone service' in value:
-            if row['Phone Service'] == 'No':
-                return 'No'
-            
-        elif 'No internet service' in value:
-            if row['Internet Service'] == 'No':
-                return 'No'
+        if 'No phone service' in value and row['Phone Service'] == 'No':
+            return 'No'
+        elif 'No internet service' in value and row['Internet Service'] == 'No':
+            return 'No'
         return value
 
 class CategoricalEncoder(BaseEstimator, TransformerMixin):
     """
-    Um transformador que aplica OneHotEncoder ou LabelEncoder às colunas especificadas, 
-    ou a todas as colunas categóricas se nenhuma coluna específica for fornecida.
-    No caso do OneHotEncoder, ele também lida com a multicolinearidade removendo a 
-    primeira coluna codificada se necessário.
+    Aplica OneHotEncoder ou LabelEncoder às colunas especificadas, ou a todas as colunas categóricas se nenhuma coluna específica for fornecida.
+    No caso do OneHotEncoder, ele também lida com a multicolinearidade removendo a primeira coluna codificada se necessário.
 
     Parâmetros:
     encoder_type: str, default='onehot'
         O tipo de encoder a ser aplicado ('onehot' ou 'label').
     drop: str ou None, default='first'
-        Se 'first', a primeira coluna de cada codificação one-hot é descartada para
-        evitar multicolinearidade. Se None, todas as colunas são mantidas.
+        Se 'first', a primeira coluna de cada codificação one-hot é descartada para evitar multicolinearidade. Se None, todas as colunas são mantidas.
     specified_columns: list ou None, default=None
-        Uma lista de colunas especificadas para codificar. Se None, todas as colunas
-        categóricas serão codificadas.
-
-    Atributos:
-    encoders: dict
-        Um dicionário mapeando nomes de colunas a seus respectivos encoders.
+        Uma lista de colunas especificadas para codificar. Se None, todas as colunas categóricas serão codificadas.
 
     Métodos:
-    fit(X, y=None): 
-        Aprende as categorias das colunas especificadas ou categóricas.
-    transform(X): 
-        Transforma as colunas aplicando o encoder escolhido.
+    fit: Aprende as categorias das colunas especificadas ou categóricas.
+    transform: Transforma as colunas aplicando o encoder escolhido.
     """
-
     def __init__(self, encoder_type='onehot', drop='first', specified_columns=None):
         self.encoder_type = encoder_type
         self.drop = drop
@@ -362,6 +275,9 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
         
         if self.encoder_type == 'onehot':
             new_X.drop(columns=self.encoders.keys(), axis=1, inplace=True)
+
+        if new_X.isnull().any().any():
+            print(f"NaNs introduzidos após a transformação {self.__class__.__name__}")
         return new_X
     
 class RBFTransformer(BaseEstimator, TransformerMixin):
@@ -377,114 +293,122 @@ class RBFTransformer(BaseEstimator, TransformerMixin):
         Parâmetro gamma do kernel RBF que define a largura da curva de similaridade.
     model_path: str, opcional
         Caminho para um arquivo pickle contendo as modas identificadas.
+
+    Métodos:
+    fit: Ajusta o transformador identificando as modas da distribuição da coluna especificada de X.
+    transform: Aplica a transformação RBF na coluna especificada de X usando as modas identificadas.
     """
     
-    def __init__(self, column, n_modes=2, gamma=0.1, model_path=None):
+    def __init__(self, column, n_modes=2, gamma=0.1, model_path=None, active=True):
         self.column = column
         self.n_modes = n_modes
         self.gamma = gamma
         self.model_path = model_path
         self.modes_ = None
+        self.active = active
 
     def fit(self, X, y=None):
-        """
-        Ajusta o transformador identificando as modas da distribuição da coluna especificada de X.
-        """
-        if self.model_path is not None:
-            with open(self.model_path, 'rb') as file:
-                self.modes_ = pickle.load(file)
+        if not self.active:
+            return self
+        else:
+            if self.model_path is not None:
+                with open(self.model_path, 'rb') as file:
+                    self.modes_ = pickle.load(file)
                 
-        if self.modes_ is None:
-            column_data = X[self.column].values
-            peaks, _ = find_peaks(column_data, distance=1)  # 'distance' pode ser ajustado se for necessário.
+            if self.modes_ is None:
+                column_data = X[self.column].values
+                peaks, _ = find_peaks(column_data, distance=1)  #'distance' pode ser ajustado.
             
-            if len(peaks) < self.n_modes:
-                raise RuntimeError("Número de modas encontradas menor que 'n_modes'.")
-            prominences = column_data[peaks]
-            # Armazenar os valores das modas
-            self.modes_ = column_data[peaks[np.argsort(prominences)[-self.n_modes:]]]
+                if len(peaks) < self.n_modes:
+                    raise RuntimeError("Número de modas encontradas menor que 'n_modes'.")
+                prominences = column_data[peaks]
+                self.modes_ = column_data[peaks[np.argsort(prominences)[-self.n_modes:]]]
 
-            if self.model_path is None:
-                preprocesspath = Path('../preprocessing')
-                self.model_path = f'{preprocesspath}/rbf_transformer_model.pkl'
+                if self.model_path is None:
+                    preprocesspath = Path('../preprocessing')
+                    self.model_path = f'{preprocesspath}/rbf_transformer_model.pkl'
 
-            with open(self.model_path, 'wb') as file:
-                pickle.dump(self.modes_, file)
-        return self
+                with open(self.model_path, 'wb') as file:
+                    pickle.dump(self.modes_, file)
+            return self
 
     def transform(self, X):
-        """
-        Aplica a transformação RBF na coluna especificada de X usando as modas identificadas.
-        """
-        if self.modes_ is None:
-            raise RuntimeError("Chame 'fit' antes de 'transform'.")
+        if not self.active:
+            return X
+        else:
+            if self.modes_ is None:
+                raise RuntimeError("Chame 'fit' antes de 'transform'.")
 
-        column_data = X[self.column].values.reshape(-1, 1)
+            column_data = X[self.column].values.reshape(-1, 1)
 
-        # Usar os valores das modas para encontrar índices correspondentes no conjunto de dados atual
-        for i, moda_valor in enumerate(self.modes_):
-            # Encontrar o índice mais próximo do valor da moda no conjunto de dados atual
-            moda_index = np.abs(column_data - moda_valor).argmin()
-            X_rbf = rbf_kernel(column_data, column_data[moda_index].reshape(-1, 1), gamma=self.gamma)
-            X[f"{self.column}_mode_{i}"] = X_rbf.flatten()
-        return X
+            for i, moda_valor in enumerate(self.modes_):
+                moda_index = np.abs(column_data - moda_valor).argmin()
+                X_rbf = rbf_kernel(column_data, column_data[moda_index].reshape(-1, 1), gamma=self.gamma)
+                X[f"{self.column}_mode_{i}"] = X_rbf.flatten()
+
+            if X.isnull().any().any():
+                print(f"NaNs introduzidos após a transformação {self.__class__.__name__}")
+            return X
     
 class KMeansCluster(BaseEstimator, TransformerMixin):
     """
-    Um transformador que utiliza um modelo KMeans para agrupar dados e adicionar uma nova coluna ao DataFrame 
-    com os rótulos dos clusters. Essa classe pode carregar um modelo KMeans pré-treinado de um arquivo pickle 
-    ou treinar um novo modelo KMeans e salvá-lo automaticamente se nenhum caminho for especificado.
+    Utiliza um modelo KMeans para agrupar dados em clusters e adicionar uma nova coluna ao DataFrame com os rótulos dos clusters. 
+    Essa classe pode carregar um modelo KMeans pré-treinado de um arquivo pickle ou treinar um novo modelo KMeans e salvar automaticamente se nenhum caminho de modelo for especificado.
 
     Parâmetros:
-    model_path: str, opcional
+    model_path : str, opcional
         Caminho para um arquivo pickle contendo um modelo KMeans pré-treinado. Se não fornecido, um novo modelo será treinado e salvo.
-    n_clusters: int, opcional
+    n_clusters : int, opcional
         Número de clusters para o KMeans. Usado apenas se um novo modelo for treinado.
-    columns_cluster: list
+    columns_cluster : list, opcional
         As colunas do DataFrame a serem usadas para o clustering.
 
-    Atributos:
-    kmeans: KMeans
-        Instância do modelo KMeans carregada do arquivo pickle ou treinada.
+    Métodos:
+    fit: Treina o modelo KMeans com os dados fornecidos ou carrega um modelo pré-existente do caminho do arquivo especificado. Se nenhum caminho for fornecido, salva o modelo treinado em um arquivo pickle padrão.
+    transform: Aplica o modelo KMeans aos dados especificados e adiciona uma nova coluna 'Cluster' ao DataFrame com os rótulos dos clusters.
     """
-
-    def __init__(self, model_path=None, n_clusters=3, columns_cluster=None):
+    def __init__(self, model_path=None, n_clusters=3, columns_cluster=None, active=True):
         self.model_path = model_path
         self.n_clusters = n_clusters
         self.columns_cluster = columns_cluster
-    
+        self.kmeans = None
+        self.active = active
+
     def fit(self, X, y=None):
-        """
-        Método de ajuste. Treina o modelo KMeans se nenhum modelo pré-treinado foi carregado.
-        Salva o modelo treinado em um arquivo pickle se um caminho for fornecido, ou cria um nome padrão para o arquivo.
-        """
-        if self.model_path is not None and os.path.exists(self.model_path):
-            with open(self.model_path, 'rb') as file:
-                self.kmeans = pickle.load(file)
+        if not self.active:
+            return self
         else:
-            self.kmeans = KMeans(n_clusters=self.n_clusters, init='k-means++')
+            if self.model_path is not None and os.path.exists(self.model_path):
+                with open(self.model_path, 'rb') as file:
+                    self.kmeans = pickle.load(file)
+            else:
+                if self.columns_cluster is None:
+                    raise ValueError("As colunas para clustering não foram especificadas.")
+            
+                self.kmeans = KMeans(n_clusters=self.n_clusters, init='k-means++')
+                self.kmeans.fit(X[self.columns_cluster])
 
-        if self.columns_cluster is None:
-            raise ValueError("As colunas para clustering não foram especificadas.")
-
-        # Treinar o modelo KMeans
-        self.kmeans.fit(X[self.columns_cluster])
-        
-        # Salvar o modelo treinado
-        if self.model_path is None:
-            preprocesspath = Path('../preprocessing')
-            with open(f'{preprocesspath}/kmeans_model.pkl', 'wb') as file:
-                pickle.dump(self.kmeans, file)
-        return self
+                if self.model_path is None:
+                    preprocesspath = Path('../preprocessing')
+                    self.model_path = f'{preprocesspath}/kmeans_model.pkl'
+            
+                with open(self.model_path, 'wb') as file:
+                    pickle.dump(self.kmeans, file)
+            return self
 
     def transform(self, X):
-        """
-        Aplica o modelo KMeans aos dados especificados e adiciona uma coluna 'Cluster' ao DataFrame
-        com os rótulos dos clusters.
-        """
-        if self.columns_cluster is None:
-            raise ValueError("As colunas para clustering não foram especificadas.")
+        if not self.active:
+            return X
+        else:
+            if self.kmeans is None:
+                raise RuntimeError("O modelo KMeans não foi carregado ou treinado. Chame 'fit' antes de 'transform'.")
+        
+            if self.columns_cluster is None:
+                raise ValueError("As colunas para clustering não foram especificadas.")
 
-        X = X.copy()
-        X['Cluster'] = self.kmeans.predict(X[self.columns_cluster])
-        return X
+            X = X.copy()
+            X['Cluster'] = self.kmeans.predict(X[self.columns_cluster])
+
+            if X.isnull().any().any():
+                print(f"NaNs introduzidos após a transformação {self.__class__.__name__}")
+            return X
