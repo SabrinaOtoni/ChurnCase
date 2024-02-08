@@ -226,59 +226,109 @@ class ServiceTransformer(BaseEstimator, TransformerMixin):
         elif 'No internet service' in value and row['Internet Service'] == 'No':
             return 'No'
         return value
-
+    
 class CategoricalEncoder(BaseEstimator, TransformerMixin):
     """
-    Aplica OneHotEncoder ou LabelEncoder às colunas especificadas, ou a todas as colunas categóricas se nenhuma coluna específica for fornecida.
-    No caso do OneHotEncoder, ele também lida com a multicolinearidade removendo a primeira coluna codificada se necessário.
+    Aplica get_dummies ou LabelEncoder às colunas especificadas, ou a todas as colunas categóricas se nenhuma coluna específica for fornecida.
+    No caso de get_dummies, ele também lida com a multicolinearidade removendo a última coluna codificada se necessário.
 
     Parâmetros:
     encoder_type: str, default='onehot'
         O tipo de encoder a ser aplicado ('onehot' ou 'label').
-    drop: str ou None, default='first'
-        Se 'first', a primeira coluna de cada codificação one-hot é descartada para evitar multicolinearidade. Se None, todas as colunas são mantidas.
+    drop_last: bool, default=True
+        Se True, a última coluna de cada codificação one-hot é descartada para evitar multicolinearidade.
     specified_columns: list ou None, default=None
         Uma lista de colunas especificadas para codificar. Se None, todas as colunas categóricas serão codificadas.
-
-    Métodos:
-    fit: Aprende as categorias das colunas especificadas ou categóricas.
-    transform: Transforma as colunas aplicando o encoder escolhido.
     """
-    def __init__(self, encoder_type='onehot', drop='first', specified_columns=None):
+    def __init__(self, encoder_type='onehot', drop=True, specified_columns=None):
         self.encoder_type = encoder_type
         self.drop = drop
         self.specified_columns = specified_columns
         self.encoders = {}
+        self.train_columns = None
 
     def fit(self, X, y=None):
-        columns_encode = self.specified_columns if self.specified_columns is not None else X.select_dtypes(include=['object', 'category']).columns
-        
-        for col in columns_encode:
-            if self.encoder_type == 'onehot':
-                self.encoders[col] = OneHotEncoder(sparse_output=False, handle_unknown='error', drop=self.drop).fit(X[[col]])
+        if self.encoder_type == 'onehot':
+            if self.specified_columns:
+                self.train_columns = self.specified_columns
+            else:
+                self.train_columns = X.select_dtypes(include=['object', 'category']).columns.tolist()
             
-            elif self.encoder_type == 'label':
+        elif self.encoder_type == 'label':
+            columns_encode = self.specified_columns if self.specified_columns is not None else X.select_dtypes(include=['object', 'category']).columns
+            for col in columns_encode:
                 self.encoders[col] = LabelEncoder().fit(X[col])
+
         return self
 
     def transform(self, X):
         new_X = X.copy()
 
-        for col, encoder in self.encoders.items():
-            if self.encoder_type == 'onehot':
-                new_col = encoder.transform(X[[col]])
-                new_col = pd.DataFrame(new_col, columns=encoder.get_feature_names_out([col]))
-                new_X = pd.concat([new_X, new_col], axis=1)
-
-            elif self.encoder_type == 'label':
-                new_X[col] = encoder.transform(X[col])
-        
         if self.encoder_type == 'onehot':
-            new_X.drop(columns=self.encoders.keys(), axis=1, inplace=True)
+            dummies = pd.get_dummies(new_X[self.train_columns], drop_first=self.drop) #OneHotEncoder do Sklearn não funciona no pipeline (ValueError: Input contains NaN). Solução: personalizar o get_dummies do pandas.
+            new_X = pd.concat([new_X, dummies], axis=1)
+            new_X.drop(columns=self.train_columns, axis=1, inplace=True)
+
+        elif self.encoder_type == 'label':
+            for col, encoder in self.encoders.items():
+                new_X[col] = encoder.transform(new_X[col])
 
         if new_X.isnull().any().any():
             print(f"NaNs introduzidos após a transformação {self.__class__.__name__}")
         return new_X
+
+# class CategoricalEncoder(BaseEstimator, TransformerMixin):
+#     """
+#     Aplica OneHotEncoder ou LabelEncoder às colunas especificadas, ou a todas as colunas categóricas se nenhuma coluna específica for fornecida.
+#     No caso do OneHotEncoder, ele também lida com a multicolinearidade removendo a primeira coluna codificada se necessário.
+
+#     Parâmetros:
+#     encoder_type: str, default='onehot'
+#         O tipo de encoder a ser aplicado ('onehot' ou 'label').
+#     drop: str ou None, default='first'
+#         Se 'first', a primeira coluna de cada codificação one-hot é descartada para evitar multicolinearidade. Se None, todas as colunas são mantidas.
+#     specified_columns: list ou None, default=None
+#         Uma lista de colunas especificadas para codificar. Se None, todas as colunas categóricas serão codificadas.
+
+#     Métodos:
+#     fit: Aprende as categorias das colunas especificadas ou categóricas.
+#     transform: Transforma as colunas aplicando o encoder escolhido.
+#     """
+#     def __init__(self, encoder_type='onehot', drop='first', specified_columns=None):
+#         self.encoder_type = encoder_type
+#         self.drop = drop
+#         self.specified_columns = specified_columns
+#         self.encoders = {}
+
+#     def fit(self, X, y=None):
+#         columns_encode = self.specified_columns if self.specified_columns is not None else X.select_dtypes(include=['object', 'category']).columns
+        
+#         for col in columns_encode:
+#             if self.encoder_type == 'onehot':
+#                 self.encoders[col] = OneHotEncoder(sparse_output=False, handle_unknown='error', drop=self.drop).fit(X[[col]])
+            
+#             elif self.encoder_type == 'label':
+#                 self.encoders[col] = LabelEncoder().fit(X[col])
+#         return self
+
+#     def transform(self, X):
+#         new_X = X.copy()
+
+#         for col, encoder in self.encoders.items():
+#             if self.encoder_type == 'onehot':
+#                 new_col = encoder.transform(X[[col]])
+#                 new_col = pd.DataFrame(new_col, columns=encoder.get_feature_names_out([col]))
+#                 new_X = pd.concat([new_X, new_col], axis=1)
+
+#             elif self.encoder_type == 'label':
+#                 new_X[col] = encoder.transform(X[col])
+        
+#         if self.encoder_type == 'onehot':
+#             new_X.drop(columns=self.encoders.keys(), axis=1, inplace=True)
+
+#         if new_X.isnull().any().any():
+#             print(f"NaNs introduzidos após a transformação {self.__class__.__name__}")
+#         return new_X
     
 class RBFTransformer(BaseEstimator, TransformerMixin):
     """
