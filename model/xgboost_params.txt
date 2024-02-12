@@ -1,0 +1,12 @@
+{'categorical_encoder__encoder_type': 'label', 'kmeans_cluster__active': True, 'model': XGBClassifier(base_score=None, booster='gbtree', callbacks=None,
+              colsample_bylevel=None, colsample_bynode=None,
+              colsample_bytree=0.6, device=None, early_stopping_rounds=None,
+              enable_categorical=False, eval_metric=None, feature_types=None,
+              gamma=0.01, grow_policy=None, importance_type=None,
+              interaction_constraints=None, learning_rate=0.1, max_bin=None,
+              max_cat_threshold=None, max_cat_to_onehot=None,
+              max_delta_step=None, max_depth=3, max_leaves=None,
+              min_child_weight=None, missing=nan, monotone_constraints=None,
+              multi_strategy=None, n_estimators=None, n_jobs=None,
+              num_parallel_tree=None, random_state=None, ...), 'model__booster': 'gbtree', 'model__colsample_bytree': 0.6, 'model__gamma': 0.01, 'model__learning_rate': 0.1, 'model__max_depth': 3, 'model__subsample': 0.8, 'rbf__active': False, 'scaler': StandardScaler(), 'service_transformer__encoder_type': 'label', 'transformation': LogTransformer(columns=['Total Charges'],
+               model_path='../preprocessing/log_transformer_model.pkl')}

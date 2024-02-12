@@ -1,6 +1,6 @@
 '''
 Script python para criação automatizada da estrutura de pastas utilizada no projeto.
-
+--------------------------------------
 Sabrina Otoni da Silva - 2024/01
 '''
 # Importação da biblioteca necessária.
@@ -8,15 +8,18 @@ import os
 
 # Dicionário que define a estrutura de pastas desejada
 estrutura_pastas = {
+    'automations' : [], # Pasta para scripts Python
     'data': {  # Pasta principal 'data' contendo subpastas
         'd01_raw': [],  # Subpasta para dados brutos
         'd02_intermediate': [],  # Subpasta para dados intermediários
-        'd03_processed': []  # Subpasta para dados processados
+        'd03_processed': [],  # Subpasta para dados processados
+        'd04_models': [] # Subpasta para dados processados
     },
     'documentation': [],  # Pasta para documentação
     'model': [],  # Pasta para modelos
     'notebooks': [],  # Pasta para notebooks Jupyter
-    'preprocessing': []  # Pasta para scripts de pré-processamento
+    'preprocessing': [],  # Pasta para scripts de pré-processamento
+    'streamlit': [] # Pasta para front-end
 }
 
 # Caminho base onde as pastas serão criadas (diretório atual)
