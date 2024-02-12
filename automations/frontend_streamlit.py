@@ -1,14 +1,26 @@
+
+'''
+Front-end feito em python utilizando o framework Streamlit com o objetivo de utilizar o modelo para predições sob o case de Churn.
+--------------------------------------
+Sabrina Otoni da Silva - 2024/01
+'''
 from pathlib import Path
-import joblib
+import pickle
 import pandas as pd
 import streamlit as st
+import data_processing
 
 # Função para carregar o modelo e o pré-processador
 def load_model_preprocessor():
-    model_path = Path('../model') / 'xgboost_model.pkl'
-    preprocessor_path = Path('../preprocessing') / 'preprocessor.pkl'
-    model = joblib.load(model_path)
-    preprocessor = joblib.load(preprocessor_path)
+    current_dir = Path(__file__).parent
+    model_path = current_dir / Path('../model/xgb_model.pkl')
+    preprocessor_path = current_dir / Path('../preprocessing/preprocessing.pkl')
+
+    with open(model_path, 'rb') as file:
+        model = pickle.load(file)
+        
+    with open(preprocessor_path, 'rb') as file:
+        preprocessor = pickle.load(file)
     return model, preprocessor
 
 # Função para validar os dados de entrada
