@@ -1,4 +1,4 @@
-# Cancelamento de Clientes - Telco
+# Cancelamento de Clientes
 
 ## Autora
 
@@ -22,27 +22,36 @@ O projeto foi organizado de uma forma linear de modo a facilitar a navegação e
 ├── automations
 │   │   ├── data_processing.py
 │   │   ├── folders_creation.py
+│   │   ├── frontend_streamlit.py
+│   │   ├── prediction_model.py
 ├── data
 │   ├── d01_raw
 │   │   ├── telco_customer_churn.xlsx
+│   │   ├── text.csv
 │   ├── d02_intermediate
 │   ├── ├── X_test.csv
 │   ├── ├── X_train.csv
 │   ├── ├── telco_customer_churn_v2.xlsx
 │   ├── ├── y_test.csv
 │   ├── ├── y_train.csv
+│   ├── d04_models
+│   ├── ├── score_models.csv
 ├── notebooks
 │   ├── n00_data_preparation.ipynb
 │   ├── n01_exploratory_data_analysis.ipynb
 │   ├── n02_data_split.ipynb
 │   ├── n03_feature_engineering.ipynb
-│   ├── n04_pipeline.ipynb
+│   ├── n04_check_combinations.ipynb
+│   ├── n05_test_model.ipynb
+│   ├── n06_model_validation.ipynb
 ├── preprocessing
 │   ├── boxcox_transformer_model.pkl
 │   ├── kmeans_model.pkl
 │   ├── log_transformer_model.pkl
+│   ├── preprocessing.pkl
 │   ├── rbf_transformer_model.pkl
-└── README.md
+├── README.md
+└── requirements.txt
 ```
 
 ## Linkedin
