@@ -18,7 +18,8 @@ estrutura_pastas = {
     'documentation': [],  # Pasta para documentação
     'model': [],  # Pasta para modelos
     'notebooks': [],  # Pasta para notebooks Jupyter
-    'preprocessing': []  # Pasta para scripts de pré-processamento
+    'preprocessing': [],  # Pasta para scripts de pré-processamento
+    'presentation': [] # Pasta para apresentações
 }
 
 # Caminho base onde as pastas serão criadas (diretório atual)

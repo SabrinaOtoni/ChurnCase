@@ -1,4 +1,3 @@
-
 '''
 Script python para tratamento do dataset "telco_customer_churn" disponibilizado pela IBM para demonstração da ferramenta IBM Cognos Analytics.
 --------------------------------------
@@ -49,7 +48,8 @@ class DataTreat(BaseEstimator, TransformerMixin):
 class LogTransformer(BaseEstimator, TransformerMixin):
     """
     Aplica a transformação logarítmica em colunas de um DataFrame. 
-    Essa classe pode ser inicializada com um caminho para um modelo treinado salvo como um arquivo pickle ou pode ser treinada com um novo conjunto de dados.
+    Essa classe pode ser inicializada com um caminho para um modelo treinado salvo como um arquivo pickle 
+    ou pode ser treinada com um novo conjunto de dados.
 
     Parâmetros:
     columns: list of str, opcional
