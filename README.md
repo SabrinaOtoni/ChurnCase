@@ -1,9 +1,5 @@
 # Cancelamento de Clientes
 
-## Autora
-
-- Sabrina Otoni da Silva
-
 ## Descrição
 Esse projeto foca na análise de um conjunto de dados fornecido pela IBM para demonstração da ferramenta IBM Cognos Analytics. O dataset apresenta informações detalhadas sobre 7043 clientes de uma empresa fictícia de telecomunicações da Califórnia, abrangendo serviços de telefonia residencial e internet no 3º trimestre.
 
