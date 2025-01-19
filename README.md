@@ -49,8 +49,50 @@ O projeto foi organizado de uma forma linear de modo a facilitar a navegação e
 ├── README.md
 └── requirements.txt
 ```
+## Reproduzir o projeto localmente
+Para garantir que o projeto seja reproduzido com as mesmas versões de bibliotecas utilizadas no desenvolvimento, utilizamos a ferramenta [UV](https://docs.astral.sh/uv/). 
+O UV gerencia dependências de forma simples e rápida, garantindo um ambiente 100% reprodutível.
+
+### Pré-requisitos
+1. **Python 3.10 ou superior** (o projeto foi testado com Python 3.11).
+2. **pip** instalado.
+3. **Git** (caso deseje clonar o repositório via terminal).
+
+### Passo 1: Clonar o repositório
+Clone o repositório diretamente do GitHub:
+```bash
+git clone https://github.com/SabrinaOtoni/ChurnCase.git
+Ou baixe o projeto como um arquivo ZIP no GitHub e extraia para uma pasta local.
+```
+
+### Passo 2: Instalar a UV
+No terminal, instale a UV com o `pip`:
+```bash
+pip install uv
+```
+
+### Passo 3: Sincronizar o ambiente
+No diretório do projeto (onde está o `README.md`), rode:
+```bash
+uv sync
+```
+Isso vai criar (ou atualizar) um ambiente virtual .venv (ou similar) e instalará todas as bibliotecas listadas nos arquivos pyproject.toml e uv.lock.
+As versões das bibliotecas serão exatamente as mesmas utilizadas no desenvolvimento.
+
+### Passo 4: Executar notebooks ou scripts
+Após sincronizar o ambiente, você pode rodar notebooks ou os scripts do projeto. 
+Para isso, utilize sempre "uv run ..." para garantir que o comando seja executado dentro do ambiente virtual configurado pela UV.
+
+- **Abrir os notebooks**:
+  ```bash
+  uv run jupyter notebook
+  ```
+  Em seguida, navegue até a pasta `notebooks` e abra o arquivo desejado (por exemplo, `n00_data_preparation.ipynb`).
+
+- **Executar scripts Python**:
+  ```bash
+  uv run python automations/data_processing.py
+  ```
 
 ## Linkedin
 https://www.linkedin.com/in/sabrina-otoni-da-silva-22525519b/
-
-## Agradecimentos
