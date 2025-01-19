@@ -1,0 +1,14 @@
+# Ambiente virtual local
+venv/
+.virtualenv_ambiente/
+.venv/
+
+# Pastas de cache Python
+__pycache__/
+*.pyc
+
+# Logs
+*.log
+
+# Arquivos lock ou config locais
+.env
