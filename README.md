@@ -57,6 +57,7 @@ O UV gerencia dependências de forma simples e rápida, garantindo um ambiente 1
 1. **Python 3.10 ou superior** (o projeto foi testado com Python 3.11).
 2. **pip** instalado.
 3. **Git** (caso deseje clonar o repositório via terminal).
+Executar os comandos abaixo usando git bash.
 
 ### Passo 1: Clonar o repositório
 Clone o repositório diretamente do GitHub:
@@ -76,7 +77,7 @@ No diretório do projeto (onde está o `README.md`), rode:
 uv sync
 source .venv/Scripts/activate
 ```
-Isso vai criar (ou atualizar) um ambiente virtual .venv e instalará todas as bibliotecas listadas nos arquivos pyproject.toml e uv.lock.
+Isso vai criar (ou atualizar) um ambiente virtual .venv, instalará todas as bibliotecas listadas nos arquivos pyproject.toml e uv.lock, e por fim, ativar o ambiente virtual.
 As versões das bibliotecas serão exatamente as mesmas utilizadas no desenvolvimento.
 
 ### Passo 4: Executar notebooks ou scripts
@@ -84,10 +85,13 @@ As versões das bibliotecas serão exatamente as mesmas utilizadas no desenvolvi
   ```bash
   uv run jupyter notebook
   ```
-Em seguida, navegue até a pasta `notebooks` e abra o arquivo desejado.
-git bash
-- **Executar **:
-uv exec -- streamlit run frontend_streamlit.py
+  Em seguida, navegue até a pasta `notebooks` e abra o arquivo desejado.
 
+- **Executar o frontend**:
+  Se quiser testar o modelo, rode o comando abaixo:
+  ```bash
+  uv exec -- streamlit run frontend_streamlit.py
+  ```
+  
 ## Linkedin
 https://www.linkedin.com/in/sabrina-otoni-da-silva-22525519b/
